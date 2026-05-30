@@ -1,0 +1,1 @@
+g++ -Wno-narrowing -fpermissive Main.cpp -o Main.exe
