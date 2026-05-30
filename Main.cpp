@@ -10,8 +10,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "include/stb/stb_image_write.h"
 
-const int width = 150;
-const int height = 150;
+const int width = 50;
+const int height = 50;
 const int greyChannels = 3;
 
 unsigned char *grey_img;
@@ -20,7 +20,10 @@ size_t grey_img_size;
 
 
 std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> color, float distance){
-    std::array<unsigned char, 3> newColor;
+    if (distance > 1){
+        distance = 1;
+    }
+        std::array<unsigned char, 3> newColor;
     newColor[0] = (unsigned char)((int)color[0] * distance);
     newColor[1] = (unsigned char)((int)color[1] * distance);
     newColor[2] = (unsigned char)((int)color[2] * distance);
@@ -31,11 +34,12 @@ float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<
     int16_t pixelpos = (pixel - grey_img) / greyChannels;
     int16_t startpos = (start - grey_img) / greyChannels;
     int16_t relapos = pixelpos - startpos;
-    std::array<float, 2> vector = {(relapos) % scale[0], relapos / scale[1]};
+    std::array<float, 2> vector = {pixelpos % width, pixelpos / width};
+    vector[0] -= startpos % width;
+    vector[1] -= startpos / width;
     vector[0] /= scale[0];
     vector[1] /= scale[1];
-    printf("|%f|", vector[0]);
-    return float(vector[0] + vector[1]);
+    return float(sqrt((vector[0] * vector[0]) + (vector[1] * vector[1])));
 }
 
 
@@ -65,7 +69,6 @@ struct splat {
         unsigned char *placement = grey_img;
         placement += position[0] * greyChannels;
         placement += position[1] * greyChannels * width;
-        set_pixel_color(placement, color);
 
         for (int i = 0; i != scale[1] * width * greyChannels; i += width * greyChannels){
             for (int j = 0; j != scale[0] * greyChannels; j += greyChannels){
@@ -82,7 +85,7 @@ std::vector<splat> splats;
 
 
 int main(){
-    splats.push_back(splat( {5, 5}, {140, 140}, {255, 0, 255} ));
+    splats.push_back(splat( {5, 5}, {40, 40}, {255, 0, 255} ));
 
     grey_img_size = width * height * greyChannels;
 
