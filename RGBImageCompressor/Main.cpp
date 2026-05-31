@@ -12,9 +12,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "include/stb/stb_image_write.h"
 
-const int width = 300;
-const int height = 300;
-const int greyChannels = 3;
+const int width = 500;
+const int height = 500;
+const int greyChannels = 4;
 
 unsigned char *grey_img;
 
@@ -45,15 +45,28 @@ float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<
 
     vector[0] /= scale[0] / 2;
     vector[1] /= scale[1] / 2;
-    return float(sqrt((vector[0] * vector[0]) + (vector[1] * vector[1])));//std::pow(2.71828182845904523536, std::pow(-(sqrt((vector[0] * vector[0]) + (vector[1] * vector[1]))), 2)));
+    return float(sqrt((vector[0] * vector[0]) + (vector[1] * vector[1])));
 }
 
 
-void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color){
+void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color, float distance){
+    if (distance >= 1){
+        distance = 1;
+    }
+    distance = 1 - distance;
     if (pixel > grey_img && pixel < grey_img + grey_img_size){
-        if (color[0] + *pixel >= 256){*pixel = 255;} else {*pixel += color[0];}
-        if (color[1] + *(pixel + 1) >= 256){*(pixel + 1) = 255;} else {*(pixel + 1) += color[1];}
-        if (color[2] + *(pixel + 2) >= 256){*(pixel + 2) = 255;} else {*(pixel + 2) += color[2];}
+        //if (color[0] + *pixel >= 256){*pixel = 255;} else             {*pixel += color[0];}
+        //if (color[1] + *(pixel + 1) >= 256){*(pixel + 1) = 255;} else {*(pixel + 1) += color[1];}
+        //if (color[2] + *(pixel + 2) >= 256){*(pixel + 2) = 255;} else {*(pixel + 2) += color[2];}
+        float COEF = (255 - *(pixel + 3)) / 255.0f;
+        *pixel += color[0] * COEF;
+        *(pixel + 1) += color[1] * COEF;
+        *(pixel + 2) += color[2] * COEF;
+        if (*(pixel + 3) + (distance * 255) * COEF >= 255){
+            *(pixel + 3) = 255;
+        } else {
+            *(pixel + 3) += (distance * 255) * COEF;
+        }
         //TODO --- Fix this to not be additive!!!!!!!!
     }
 }
@@ -78,7 +91,7 @@ struct splat {
 
         for (int i = 0; i != scale[1] * width * greyChannels; i += width * greyChannels){
             for (int j = 0; j != scale[0] * greyChannels; j += greyChannels){
-                set_pixel_color(placement + i + j, color_by_distance(color, distance_to_center(placement + i + j, placement, scale)));
+                set_pixel_color(placement + i + j, color, distance_to_center(placement + i + j, placement, scale));
             }
         }
     }
@@ -91,10 +104,13 @@ std::vector<splat> splats;
 
 
 int main(){
-    splats.push_back(splat( {5, 5}, {70, 140}, {255, 0, 0} ));
-    splats.push_back(splat( {70, 5}, {60, 140}, {0, 255, 255} ));
-    splats.push_back(splat( {5, 50}, {400, 80}, {0, 0, 255} ));
-    splats.push_back(splat( {5, 5}, {49, 49}, {255, 255, 255} ));
+    splats.push_back(splat( {0, 4}, {380, 40}, {0, 0, 255} ));
+    splats.push_back(splat( {80, 0}, {400, 100}, {255, 0, 0} ));
+    
+    
+    
+
+
 
     grey_img_size = width * height * greyChannels;
 
@@ -108,12 +124,26 @@ int main(){
         *i = 0;
         *(i+1) = 0;
         *(i+2) = 0;
+        *(i + 3) = 0;
     }
 
     for(int i = 0 ;i != splats.size(); i++){
         splats[i].paint();
     }
 
+    for(unsigned char *i = grey_img; i != grey_img + grey_img_size; i += greyChannels){
+        if (*(i + 3) == 0){
+            *i = 0;
+            *(i+1) = 0;
+            *(i+2) = 0;
+        }
+        float COEF = (*(i+3) / 255.0f);
+        *i = *i * COEF;
+        *(i + 1) = *(i + 1) * COEF;
+        *(i + 2) = *(i + 2) * COEF;
+    }
+
+    stbi_write_png("output.png", width, height, greyChannels, grey_img, 100);
     stbi_write_jpg("output.jpg", width, height, greyChannels, grey_img, 100);
     return 1;
 }
