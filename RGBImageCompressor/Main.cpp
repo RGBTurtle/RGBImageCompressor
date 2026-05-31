@@ -14,7 +14,7 @@
 
 const int width = 500;
 const int height = 500;
-const int greyChannels = 4;
+const int greyChannels = 3;
 
 unsigned char *grey_img;
 
@@ -50,23 +50,14 @@ float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<
 
 
 void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color, float distance){
-    if (distance >= 1){
-        distance = 1;
-    }
-    distance = 1 - distance;
     if (pixel > grey_img && pixel < grey_img + grey_img_size){
-        //if (color[0] + *pixel >= 256){*pixel = 255;} else             {*pixel += color[0];}
-        //if (color[1] + *(pixel + 1) >= 256){*(pixel + 1) = 255;} else {*(pixel + 1) += color[1];}
-        //if (color[2] + *(pixel + 2) >= 256){*(pixel + 2) = 255;} else {*(pixel + 2) += color[2];}
-        float COEF = (255 - *(pixel + 3)) / 255.0f;
-        *pixel += color[0] * COEF;
-        *(pixel + 1) += color[1] * COEF;
-        *(pixel + 2) += color[2] * COEF;
-        if (*(pixel + 3) + (distance * 255) * COEF >= 255){
-            *(pixel + 3) = 255;
-        } else {
-            *(pixel + 3) += (distance * 255) * COEF;
+        if (distance > 1){
+        distance = 1;
         }
+        float COEF = (*(pixel + 3)) / 255.0f;
+        *pixel = (*pixel * distance) + color[0];
+        *(pixel + 1) = (*(pixel + 1) * distance) + color[1];
+        *(pixel + 2) = (*(pixel + 2) * distance) + color[2];
         //TODO --- Fix this to not be additive!!!!!!!!
     }
 }
@@ -91,7 +82,8 @@ struct splat {
 
         for (int i = 0; i != scale[1] * width * greyChannels; i += width * greyChannels){
             for (int j = 0; j != scale[0] * greyChannels; j += greyChannels){
-                set_pixel_color(placement + i + j, color, distance_to_center(placement + i + j, placement, scale));
+                set_pixel_color(placement + i + j, color_by_distance(color, distance_to_center(placement + i + j, placement, scale)), distance_to_center(placement + i + j, placement, scale));
+                //set_pixel_color(placement + i + j, color, distance_to_center(placement + i + j, placement, scale));
             }
         }
     }
@@ -104,8 +96,9 @@ std::vector<splat> splats;
 
 
 int main(){
-    splats.push_back(splat( {0, 4}, {380, 40}, {0, 0, 255} ));
+    
     splats.push_back(splat( {80, 0}, {400, 100}, {255, 0, 0} ));
+    splats.push_back(splat( {0, 40}, {380, 40}, {0, 0, 255} ));
     
     
     
@@ -124,24 +117,23 @@ int main(){
         *i = 0;
         *(i+1) = 0;
         *(i+2) = 0;
-        *(i + 3) = 0;
     }
 
     for(int i = 0 ;i != splats.size(); i++){
         splats[i].paint();
     }
 
-    for(unsigned char *i = grey_img; i != grey_img + grey_img_size; i += greyChannels){
-        if (*(i + 3) == 0){
-            *i = 0;
-            *(i+1) = 0;
-            *(i+2) = 0;
-        }
-        float COEF = (*(i+3) / 255.0f);
-        *i = *i * COEF;
-        *(i + 1) = *(i + 1) * COEF;
-        *(i + 2) = *(i + 2) * COEF;
-    }
+    // for(unsigned char *i = grey_img; i != grey_img + grey_img_size; i += greyChannels){
+    //     if (*(i + 3) == 0){
+    //         *i = 0;
+    //         *(i+1) = 0;
+    //         *(i+2) = 0;
+    //     }
+    //     float COEF = (*(i+3) / 255.0f);
+    //     *i = *i * COEF;
+    //     *(i + 1) = *(i + 1) * COEF;
+    //     *(i + 2) = *(i + 2) * COEF;
+    // }
 
     stbi_write_png("output.png", width, height, greyChannels, grey_img, 100);
     stbi_write_jpg("output.jpg", width, height, greyChannels, grey_img, 100);
