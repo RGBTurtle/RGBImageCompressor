@@ -6,6 +6,7 @@
 #include <vector>
 #include <cmath>
 #include <numbers>
+#include <random>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "include/stb/stb_image.h"
@@ -17,11 +18,10 @@ const int height = 500;
 const int greyChannels = 3;
 
 unsigned char *grey_img;
-
 size_t grey_img_size;
 
 
-std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> color, float distance){
+std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> color, float distance){ //returns color but mulitplied by distance
     if (distance > 1){
         distance = 1;
     }
@@ -33,7 +33,7 @@ std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> colo
     return newColor;
 }
 
-float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<int16_t, 2> scale){
+float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<int16_t, 2> scale){ // returns the distance to the center, where 1unit is the distance from the center to the edge
     int32_t pixelpos = (pixel - grey_img) / greyChannels;
     int32_t startpos = (start - grey_img) / greyChannels;
     int32_t relapos = pixelpos - startpos;
@@ -49,7 +49,7 @@ float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<
 }
 
 
-void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color, float distance){
+void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color, float distance){ // set the pixel to the color, where distance is how much the original color is included
     if (pixel > grey_img && pixel < grey_img + grey_img_size){
         if (distance > 1){
         distance = 1;
@@ -82,8 +82,11 @@ struct splat {
 
         for (int i = 0; i != scale[1] * width * greyChannels; i += width * greyChannels){
             for (int j = 0; j != scale[0] * greyChannels; j += greyChannels){
-                set_pixel_color(placement + i + j, color_by_distance(color, distance_to_center(placement + i + j, placement, scale)), distance_to_center(placement + i + j, placement, scale));
-                //set_pixel_color(placement + i + j, color, distance_to_center(placement + i + j, placement, scale));
+
+                float distance = distance_to_center(placement + i + j, placement, scale);
+
+                set_pixel_color(placement + i + j, color_by_distance(color, distance), distance);
+
             }
         }
     }
@@ -92,19 +95,16 @@ struct splat {
 
 std::vector<splat> splats;
 
-
-
-
 int main(){
-    
-    splats.push_back(splat( {80, 0}, {400, 100}, {255, 0, 0} ));
-    splats.push_back(splat( {0, 40}, {380, 40}, {0, 0, 255} ));
-    
-    
-    
 
+    std::ifstream inFile("Test.RGBIC", std::ios_base::binary);
+    inFile.read(reinterpret_cast<char*>(splats.data()), sizeof(splats));
+    
+    //splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
+    //splats.push_back(splat( {0, 40}, {380, 40}, {0, 0, 255} ));
+    //splats.push_back(splat( {0, 40}, {380, 40}, {0, 255, 0} ));
 
-
+    
     grey_img_size = width * height * greyChannels;
 
     grey_img = (unsigned char*)malloc(grey_img_size);
@@ -123,19 +123,14 @@ int main(){
         splats[i].paint();
     }
 
-    // for(unsigned char *i = grey_img; i != grey_img + grey_img_size; i += greyChannels){
-    //     if (*(i + 3) == 0){
-    //         *i = 0;
-    //         *(i+1) = 0;
-    //         *(i+2) = 0;
-    //     }
-    //     float COEF = (*(i+3) / 255.0f);
-    //     *i = *i * COEF;
-    //     *(i + 1) = *(i + 1) * COEF;
-    //     *(i + 2) = *(i + 2) * COEF;
-    // }
+    std::ofstream outFile("test.RGBIC", std::ios_base::binary);
+    if (!outFile) {
+        printf("ERROR file not found");
+        return 1;
+    }
+    outFile.write(reinterpret_cast<char*>(splats.data()), splats.size() * sizeof(splat));
+    outFile.close();
 
-    stbi_write_png("output.png", width, height, greyChannels, grey_img, 100);
     stbi_write_jpg("output.jpg", width, height, greyChannels, grey_img, 100);
     return 1;
 }
