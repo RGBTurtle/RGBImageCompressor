@@ -97,12 +97,12 @@ std::vector<splat> splats;
 
 int main(){
 
-    std::ifstream inFile("Test.RGBIC", std::ios_base::binary);
+    std::ifstream inFile("Test.RGBG", std::ios_base::binary);
     inFile.read(reinterpret_cast<char*>(splats.data()), sizeof(splats));
     
-    //splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
-    //splats.push_back(splat( {0, 40}, {380, 40}, {0, 0, 255} ));
-    //splats.push_back(splat( {0, 40}, {380, 40}, {0, 255, 0} ));
+    splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
+    splats.push_back(splat( {0, 40}, {380, 40}, {0, 0, 255} ));
+    splats.push_back(splat( {0, 40}, {380, 40}, {0, 255, 0} ));
 
     
     grey_img_size = width * height * greyChannels;
@@ -123,13 +123,13 @@ int main(){
         splats[i].paint();
     }
 
-    std::ofstream outFile("test.RGBIC", std::ios_base::binary);
-    if (!outFile) {
-        printf("ERROR file not found");
-        return 1;
-    }
-    outFile.write(reinterpret_cast<char*>(splats.data()), splats.size() * sizeof(splat));
-    outFile.close();
+    // std::ofstream outFile("test.RGBG", std::ios_base::binary);
+    // if (!outFile) {
+    //     printf("ERROR file not found");
+    //     return 1;
+    // }
+    // outFile.write(reinterpret_cast<char*>(splats.data()), splats.size() * sizeof(splat));
+    // outFile.close();
 
     stbi_write_jpg("output.jpg", width, height, greyChannels, grey_img, 100);
     return 1;
