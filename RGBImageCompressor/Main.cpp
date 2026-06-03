@@ -59,17 +59,25 @@ std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> colo
     return newColor;
 }
 
-float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<int16_t, 2> scale){ // returns the distance to the center, where 1unit is the distance from the center to the edge
+float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<int16_t, 2> scale, int rotation){ // returns the distance to the center, where 1unit is the distance from the center to the edge
     int32_t pixelpos = (pixel - grey_img) / greyChannels;
     int32_t startpos = (start - grey_img) / greyChannels;
-    std::array<float, 2> vector = {pixelpos % width, pixelpos / width};
+    std::array<double, 2> vector = {pixelpos % width, pixelpos / width};
     vector[0] -= startpos % width;
     vector[1] -= startpos / width;
     vector[0] -= scale[0] / 2;
     vector[1] -= scale[1] / 2;
 
+
+
+    double cosine = cos(-rotation * degToRad);
+    double sine = sin(-rotation * degToRad);
+
+    vector = {(cosine * vector[0]) + (-sine * vector[1]), (sine * vector[0]) + (cosine * vector[1])};
+
     vector[0] /= scale[0] / 2;
     vector[1] /= scale[1] / 2;
+
     return float(sqrt((vector[0] * vector[0]) + (vector[1] * vector[1])));
 }
 
@@ -111,9 +119,10 @@ struct splat {
         for (int i = 0; i != scale[1] * width * greyChannels; i += width * greyChannels){
             for (int j = 0; j != scale[0] * greyChannels; j += greyChannels){
 
-                float distance = distance_to_center(placement + i + j, placement, scale);
+                unsigned char* rotatedPos = rotate_pixel_by_degree(placement + i + j, placement + ((scale[0] / 2) * greyChannels) + ((scale[1] / 2) * width * greyChannels), rotation);
+                float distance = distance_to_center(rotatedPos, placement, scale, rotation);
 
-                set_pixel_color(rotate_pixel_by_degree(placement + i + j, placement + ((scale[0] / 2) * greyChannels) + ((scale[1] / 2) * width * greyChannels), rotation), color_by_distance(color, distance), distance);
+                set_pixel_color(rotatedPos, color_by_distance(color, distance), distance);
 
             }
         }
@@ -131,7 +140,7 @@ int main(){
 
     //splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
     splats.push_back(splat( {150, 250}, {300, 40}, 45, {0, 0, 255} ));
-    splats.push_back(splat( {150, 250}, {380, 40}, 80, {0, 255, 0} ));
+    //splats.push_back(splat( {150, 250}, {380, 40}, 80, {0, 255, 0} ));
 
     
     grey_img_size = width * height * greyChannels;
