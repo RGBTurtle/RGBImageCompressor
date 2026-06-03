@@ -6,7 +6,6 @@
 #include <vector>
 #define _USE_MATH_DEFINES
 #include <cmath>
-#include <numbers>
 #include <random>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -33,8 +32,6 @@ unsigned char* rotate_pixel_by_degree(unsigned char* pixel, unsigned char* cente
 
     double cosine = cos(rotation * degToRad);
     double sine = sin(rotation * degToRad);
-
-    printf("%f, %f", sine, cosine);
 
     std::array<double,2> newVec = {(cosine * position[0]) + (-sine * position[1]), (sine * position[0]) + (cosine * position[1])};
     std::array<int,2> brandNewVec = {(int)newVec[0], (int)newVec[1]};
@@ -90,16 +87,19 @@ void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color, f
 }
 
 struct splat {
-    //TODO --- ADD ROTATION!!!!
+    //TODO --- ADD ROTATION!!!! --- ALMOST DONE :)
     std::array<int16_t, 2> position ;
 
     std::array<int16_t, 2> scale ;
 
+    unsigned char rotation;
+
     std::array<unsigned char, 3> color ;
 
-    splat(std::array<int16_t, 2> position, std::array<int16_t, 2> scale, std::array<unsigned char, 3> color){
+    splat(std::array<int16_t, 2> position, std::array<int16_t, 2> scale, unsigned char rotation, std::array<unsigned char, 3> color){
         this->position = position;
         this->scale = scale;
+        this->rotation = rotation;
         this->color = color;
     };
 
@@ -113,7 +113,7 @@ struct splat {
 
                 float distance = distance_to_center(placement + i + j, placement, scale);
 
-                set_pixel_color(rotate_pixel_by_degree(placement + i + j, placement + ((scale[0] / 2) * greyChannels) + ((scale[1] / 2) * width * greyChannels), 30), color_by_distance(color, distance), distance);
+                set_pixel_color(rotate_pixel_by_degree(placement + i + j, placement + ((scale[0] / 2) * greyChannels) + ((scale[1] / 2) * width * greyChannels), rotation), color_by_distance(color, distance), distance);
 
             }
         }
@@ -130,8 +130,8 @@ int main(){
 
 
     //splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
-    splats.push_back(splat( {150, 250}, {300, 40}, {0, 0, 255} ));
-    //splats.push_back(splat( {0, 40}, {380, 40}, {0, 255, 0} ));
+    splats.push_back(splat( {150, 250}, {300, 40}, 45, {0, 0, 255} ));
+    splats.push_back(splat( {150, 250}, {380, 40}, 80, {0, 255, 0} ));
 
     
     grey_img_size = width * height * greyChannels;
