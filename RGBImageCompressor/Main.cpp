@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <array>
 #include <vector>
+#define _USE_MATH_DEFINES
 #include <cmath>
 #include <numbers>
 #include <random>
@@ -17,8 +18,36 @@ const int width = 500;
 const int height = 500;
 const int greyChannels = 3;
 
+const double degToRad = M_PI / 180;
+
 unsigned char *grey_img;
 size_t grey_img_size;
+
+
+
+unsigned char* rotate_pixel_by_degree(unsigned char* pixel, unsigned char* center, int rotation){ // returns pixel coord rotated by an int 0 - 180
+    std::array<int,2> position  = {((pixel - grey_img) / greyChannels) % width, ((pixel - grey_img) / greyChannels) / width};
+    std::array<int,2> centerVec = {((center - grey_img) / greyChannels) % width, ((center - grey_img) / greyChannels) / width};
+    position[0] -= centerVec[0];
+    position[1] -= centerVec[1];
+
+    double cosine = cos(rotation * degToRad);
+    double sine = sin(rotation * degToRad);
+
+    printf("%f, %f", sine, cosine);
+
+    std::array<double,2> newVec = {(cosine * position[0]) + (-sine * position[1]), (sine * position[0]) + (cosine * position[1])};
+    std::array<int,2> brandNewVec = {(int)newVec[0], (int)newVec[1]};
+
+    brandNewVec[0] += centerVec[0];
+    brandNewVec[1] += centerVec[1];
+
+    unsigned char* newPixel = grey_img;
+    newPixel += (brandNewVec[0] * greyChannels) + (brandNewVec[1] * width * greyChannels);
+
+    return(newPixel);
+}
+
 
 
 std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> color, float distance){ //returns color but mulitplied by distance
@@ -36,7 +65,6 @@ std::array<unsigned char, 3> color_by_distance(std::array<unsigned char, 3> colo
 float distance_to_center(unsigned char* pixel, unsigned char* start, std::array<int16_t, 2> scale){ // returns the distance to the center, where 1unit is the distance from the center to the edge
     int32_t pixelpos = (pixel - grey_img) / greyChannels;
     int32_t startpos = (start - grey_img) / greyChannels;
-    int32_t relapos = pixelpos - startpos;
     std::array<float, 2> vector = {pixelpos % width, pixelpos / width};
     vector[0] -= startpos % width;
     vector[1] -= startpos / width;
@@ -58,11 +86,11 @@ void set_pixel_color(unsigned char* pixel, std::array<unsigned char, 3> color, f
         *pixel = (*pixel * distance) + color[0];
         *(pixel + 1) = (*(pixel + 1) * distance) + color[1];
         *(pixel + 2) = (*(pixel + 2) * distance) + color[2];
-        //TODO --- Fix this to not be additive!!!!!!!!
     }
 }
 
 struct splat {
+    //TODO --- ADD ROTATION!!!!
     std::array<int16_t, 2> position ;
 
     std::array<int16_t, 2> scale ;
@@ -85,7 +113,7 @@ struct splat {
 
                 float distance = distance_to_center(placement + i + j, placement, scale);
 
-                set_pixel_color(placement + i + j, color_by_distance(color, distance), distance);
+                set_pixel_color(rotate_pixel_by_degree(placement + i + j, placement + ((scale[0] / 2) * greyChannels) + ((scale[1] / 2) * width * greyChannels), 30), color_by_distance(color, distance), distance);
 
             }
         }
@@ -97,12 +125,13 @@ std::vector<splat> splats;
 
 int main(){
 
-    std::ifstream inFile("Test.RGBG", std::ios_base::binary);
-    inFile.read(reinterpret_cast<char*>(splats.data()), sizeof(splats));
-    
-    splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
-    splats.push_back(splat( {0, 40}, {380, 40}, {0, 0, 255} ));
-    splats.push_back(splat( {0, 40}, {380, 40}, {0, 255, 0} ));
+    //std::ifstream inFile("Test.RGBG", std::ios_base::binary);
+    //inFile.read(reinterpret_cast<char*>(splats.data()), sizeof(splats));
+
+
+    //splats.push_back(splat( {0, 40}, {380, 40}, {255, 0, 0} ));
+    splats.push_back(splat( {150, 250}, {300, 40}, {0, 0, 255} ));
+    //splats.push_back(splat( {0, 40}, {380, 40}, {0, 255, 0} ));
 
     
     grey_img_size = width * height * greyChannels;
